@@ -1,15 +1,16 @@
+import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
 # Initialize variables
-RPM = 5.15
+RPM = st.sidebar.slider('RPM', min_value=1.0, max_value=10.0, value=5.15)
 buckets = 6
 bucket_pass_length = 0.5
 expected_ratio = bucket_pass_length/(1 - bucket_pass_length)  # Calculate expected_ratio
 evaluation_time = 1200
-fps = 2
+fps = st.sidebar.slider('FPS', min_value=1, max_value=30, value=2)
 image_capture_rate = 1/fps
 
 # Initialize arrays for fps values and condition counts
@@ -56,29 +57,12 @@ for i, time in enumerate(time_array_for_full_capture):
     if time % length_of_event < length_sub_event_bucket_pass:
         condition_array_for_full_capture[i] = 1
 
-# Plot condition over time
-plt.figure(figsize=(25, 6))  # Made the plot wider
-plt.plot(time_array, condition_array, 'b-', label='fps')  # Blue line for 'fps' dataset
-plt.plot(time_array, condition_array, 'bo')  # Blue circle markers for 'fps' dataset
-plt.plot(time_array_for_full_capture, condition_array_for_full_capture, color='lightgrey', label='actual bucket passes')
-plt.xlabel('Time (s)')
-plt.ylabel('Condition (1 = bucket pass  0 = gap)')
-plt.title(f'Belt Bucket Passes sampled at {fps} fps , RPM: {RPM}, Buckets: {buckets}')  # Include 'fps', 'RPM', 'buckets', and 'fps_for_full_capture' in the title
-plt.legend()
-
-# Add text box
-plt.text(0.05, 0.95, f'Total bucket_pass: {total_bucket_pass}\nTotal gap: {total_gap}\nRatio gap to bucket_pass: {ratio_gap_to_bucket_pass}', transform=plt.gca().transAxes, fontsize=14,
-        verticalalignment='top', bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.4))
-
-plt.show()
-
 # Print total of each sampled condition and their ratio
 bucket_pass_total = np.sum(condition_array == 1)
 gap_total = np.sum(condition_array == 0)
-print(f"Total bucket_pass: {bucket_pass_total}")
-print(f"Total gap: {gap_total}")
-print(f"Ratio gap to bucket_pass: {gap_total / bucket_pass_total}")
-
+st.write(f"Total bucket_pass: {bucket_pass_total}")
+st.write(f"Total gap: {gap_total}")
+st.write(f"Ratio gap to bucket_pass: {gap_total / bucket_pass_total}")
 
 # Determine condition counts for each fps value
 for i, fps in enumerate(fps_values):
@@ -90,30 +74,6 @@ for i, fps in enumerate(fps_values):
             condition_array[j] = 1
     bucket_pass_counts[i] = np.sum(condition_array == 1)
     gap_counts[i] = np.sum(condition_array == 0)
-
-# Plot total sampled conditions over fps
-plt.figure(figsize=(10, 6))
-plt.plot(fps_values, bucket_pass_counts, label='bucket_pass')
-plt.plot(fps_values, gap_counts, label='gap')
-plt.xlabel('Image capture rate (fps)')
-plt.ylabel('Total Sampled Conditions')
-plt.title('Total Sampled Conditions over FPS')
-plt.legend()
-plt.show()
-
-# Plot ratio of conditions over fps
-plt.figure(figsize=(10, 6))
-plt.plot(fps_values, gap_counts / bucket_pass_counts, label='Ratio')  # Reversed the ratio and added label
-
-# Add bucket_pass_length as a dashed black line
-plt.axhline(y=expected_ratio, color='black', linestyle='--', label='Expected')
-
-plt.xlabel('Image capture rate (fps)')
-plt.ylabel('Ratio of bucket pass/empty belt conditions captured')
-plt.title('Ratio of bucket pass/empty belt conditions vs. belt image capture rate (FPS)')
-plt.legend()
-plt.title(f'Ratio of bucket pass/empty belt conditions captured vs. belt image capture rate RPM: {RPM}, Buckets: {buckets}')  # Include 'fps', 'RPM' and 'buckets' in the title
-plt.show()
 
 # Determine condition ratios for each combination of RPM and fps values
 for i, RPM in enumerate(RPM_values):
